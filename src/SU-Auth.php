@@ -1,115 +1,125 @@
 <?php
 
-// this is just an architecture example
+// this is just an architecture exampl
 
-if (!LPAuth::isLoggedIn())
+namespace SUAuth
 {
-    $user           = new LPAuth;
-    $user->handle   = 'user@gmail.com';
-    $user->password = 'TEST123'; // such a BAD password
+    require_once 'config.php';
 
-    if ($user->login())
+    use SUAuth\Config\Config;
+
+    interface iSUAuth
     {
-        // ....
+        public static function isLoggedIn();
+        public static function user();
+        public function login();
+        public static function create($password);
+        public static function validatePassword($password);
+
     }
-}
- 
-interface iSUAuth
-{
-    public static function isLoggedIn();
-    public static function user();
-    public function login();
-    public static function create($password);
-    public static function validatePassword($password);
- 
-}
 
-class SUAuth implements iSUAuth
-{
-    public $handle;
-    public $password;
- 
-    public function __construct(array $credentials)
+    class SUAuth implements iSUAuth
     {
-        if (isset($credentials['handle'])   $this->handle = $credentials['handle'];
-        if (isset($credentials['password']) $this->password = $credentials['password'];
-    }
-    
-    public static function isLoggedIn()
-    {
-        $cookie_name = 'user';
-        return TRUE; // cross domain
- 
-        if (!isset($_COOKIE[$cookie_name]))
+        /* @var string $handle */
+        public $handle;
+
+        /* @var string $password */
+        public $password;
+
+        public function __construct(array $credentials = NULL)
         {
-            return FALSE;
+            if (isset($credentials['handle'])   && !empty($credentials['handle']))   $this->handle   = $credentials['handle'];
+            if (isset($credentials['password']) && !empty($credentials['password'])) $this->password = $credentials['password'];
         }
-        else
+
+        public static function isLoggedIn()
         {
-            if ($_COOKIE[$cookie_name] == 'user@gmail.com')
+            if (!isset($_COOKIE[Config::Name]) && !empty($_COOKIE[Config::Name])) // TODO: for password also
             {
-                return TRUE;
+                return FALSE;
+            }
+            else
+            {
+                $Auth = new self;
+                if ($Auth->validateLogin($_COOKIE[Config::Name], $_COOKIE[Config::Password]) === TRUE)
+                {
+                    return TRUE;
+                }
+                else
+                {
+                    return FALSE;
+                }
+            }
+        }
+
+        /**
+         * Validates the user login through the database
+         *
+         * @param string $handle
+         * @param string $password
+         *
+         * @return bool
+         */
+        private function validateLogin($handle, $password)
+        {
+            // TODO: integrate Stash Queries into this
+            return true;
+        }
+
+        public static function user()
+        {
+            $user = new \stdClass;
+            $user->id = 1;
+
+            return $user;
+        }
+
+        public function login()
+        {
+            // validates log in credentials
+            if ($this->handle == 'user@gmail.com' && $this->password == 'TEST123')
+            {
+                $cookie_name  = 'user'; // turn into a constant
+                $cookie_value = $this->handle;
+                $day          = 86400;  // 86400 = 1 day
+
+                // 10 years cookie
+                if (setcookie($cookie_name, $cookie_value, time() + ($day * 30 * 12 * 10), '/'))
+                {
+                    return TRUE;
+                }
+                else
+                {
+                    return FALSE;
+                }
             }
             else
             {
                 return FALSE;
             }
+
         }
-    }
- 
-    public static function user()
-    {
-        $user = new stdClass;
-        $user->id = 1;
- 
-        return $user;
-    }
- 
-    public function login()
-    {
-        // validates log in credentials
-        if ($this->handle == 'user@gmail.com' && $this->password == 'TEST123')
+
+        public static function create($password)
         {
-            $cookie_name  = 'user'; // turn into a constant
-            $cookie_value = $this->handle;
-            $day          = 86400;  // 86400 = 1 day
- 
-            // 10 years cookie
-            if (setcookie($cookie_name, $cookie_value, time() + ($day * 30 * 12 * 10), '/'))
+            return password_hash($password, PASSWORD_BCRYPT);
+        }
+
+        public static function validatePassword($password)
+        {
+            //$storedPasswordHash = DB::getPassword($user);
+            $storedPasswordHash = '';
+            if (password_verify($password, $storedPasswordHash))
             {
+                /* Valid */
                 return TRUE;
             }
             else
             {
+                /* Invalid */
                 return FALSE;
             }
         }
-        else
-        {
-            return FALSE;
-        }
- 
+
     }
- 
-    public static function create($password)
-    {
-        $hash = password_hash($password, PASSWORD_BCRYPT);
-    }
- 
-    public static function validatePassword($password)
-    {
-        //$storedPasswordHash = DB::getPassword($user);
-        $storedPasswordHash = '';
-        if (password_verify($password, $storedPasswordHash))
-        {
-            /* Valid */
-            return TRUE;
-        }
-        else
-        {
-            /* Invalid */
-            return FALSE;
-        }
-    }
- 
 }
