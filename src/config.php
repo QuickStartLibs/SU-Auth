@@ -19,7 +19,8 @@ namespace SUAuth\Config
 
     abstract class Cookie extends Field
     {
-        const Name = 'user';
+        const Name     = 'user';
+        const Password = 'password';
     }
 
     abstract class Config extends Cookie
