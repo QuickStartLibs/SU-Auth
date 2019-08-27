@@ -1,24 +1,16 @@
 <?php
 
-// this is just an architecture exampl
+// this is just an architecture example
 
 namespace SUAuth
 {
     require_once 'config.php';
+    require_once 'AuthHelpers.php';
+    require_once 'Session.php';
 
     use SUAuth\Config\Config;
 
-    interface iSUAuth
-    {
-        public static function isLoggedIn();
-        public static function user();
-        public function login();
-        public static function create($password);
-        public static function validatePassword($password);
-
-    }
-
-    class SUAuth implements iSUAuth
+    class SUAuth extends AuthHelpers
     {
         /* @var string $handle */
         public $handle;
@@ -26,22 +18,30 @@ namespace SUAuth
         /* @var string $password */
         public $password;
 
+        /* @var Session $Session */
+        public $Session;
+
         public function __construct(array $credentials = NULL)
         {
             if (isset($credentials['handle'])   && !empty($credentials['handle']))   $this->handle   = $credentials['handle'];
             if (isset($credentials['password']) && !empty($credentials['password'])) $this->password = $credentials['password'];
+
+            $this->Session = new Session;
         }
 
-        public static function isLoggedIn()
+        // ideally turn this into a static
+        public function isLoggedIn()
         {
-            if (!isset($_COOKIE[Config::Name]) && !empty($_COOKIE[Config::Name])) // TODO: for password also
+            $checkName     = (!isset($_COOKIE[Config::Name]) && !empty($_COOKIE[Config::Name]));
+            $checkPassword = (!isset($_COOKIE[Config::Password]) && !empty($_COOKIE[Config::Password]));
+
+            if ($checkName && $checkPassword)
             {
                 return FALSE;
             }
             else
             {
-                $Auth = new self;
-                if ($Auth->validateLogin($_COOKIE[Config::Name], $_COOKIE[Config::Password]) === TRUE)
+                if ($this->validateLogin($_COOKIE[Config::Name], $_COOKIE[Config::Password]) === TRUE)
                 {
                     return TRUE;
                 }
@@ -66,15 +66,7 @@ namespace SUAuth
             return true;
         }
 
-        public static function user()
-        {
-            $user = new \stdClass;
-            $user->id = 1;
-
-            return $user;
-        }
-
-        public function login()
+        public function login(int $id = NULL) : bool
         {
             // validates log in credentials
             if ($this->handle == 'user@gmail.com' && $this->password == 'TEST123')
@@ -100,25 +92,15 @@ namespace SUAuth
 
         }
 
-        public static function create($password)
+        // force login with set parameters
+        public function saveLogin() : bool
         {
-            return password_hash($password, PASSWORD_BCRYPT);
+            return TRUE;
         }
 
-        public static function validatePassword($password)
+        public function logout() : bool
         {
-            //$storedPasswordHash = DB::getPassword($user);
-            $storedPasswordHash = '';
-            if (password_verify($password, $storedPasswordHash))
-            {
-                /* Valid */
-                return TRUE;
-            }
-            else
-            {
-                /* Invalid */
-                return FALSE;
-            }
+            return TRUE;
         }
 
     }
